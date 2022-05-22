@@ -63,14 +63,6 @@ const addVideoStream = (video, stream) => {
   })
   videoGrid.append(video);
 }
-
-const removeVideoStream = (video, stream) => {
-  video.srcObject = stream;
-  video.addEventListener('loadedmetadata', () => {
-    video.onended();
-  })
-}
-
 const scrollToBottom = () => {
   let d = $('.main__chat__window');
   d.scrollTop(d.prop("scrollHeight"));
