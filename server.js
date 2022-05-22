@@ -5,7 +5,7 @@ const io = require('socket.io')(server)
 const { v4: uuidv4 } = require('uuid');
 const { ExpressPeerServer } = require('peer');
 const peerServer = ExpressPeerServer(server, {
-  debig: true
+  debug: true
 }) // we have imported a peer Js and we have ask ExpressPeerServer to connect
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
