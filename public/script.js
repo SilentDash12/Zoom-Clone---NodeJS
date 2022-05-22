@@ -1,24 +1,21 @@
-const socket = io('/');
-const videoGrid = document.getElementById('video-grid');
-console.log(videoGrid)
-const myVideo = document.createElement('video');
-myVideo.muted = true;
-
-var peer = new Peer(undefined, {
+cconst socket = io('/')
+const videoGrid = document.getElementById('video-grid')
+const myPeer = new Peer(undefined, {
   path: '/peerjs',
   host: '/',
   port: '443'
-});
-
+})
 let myVideoStream;
+const myVideo = document.createElement('video')
+myVideo.muted = true;
+const peers = {}
 navigator.mediaDevices.getUserMedia({
   video: true,
   audio: true
 }).then(stream => {
-  myVideoStream = stream; // the myvideostream is coming from here
-  addVideoStream(myVideo, stream);
-
-  peer.on('call', call => {
+  myVideoStream = stream;
+  addVideoStream(myVideo, stream)
+  myPeer.on('call', call => {
     call.answer(stream)
     const video = document.createElement('video')
     call.on('stream', userVideoStream => {
@@ -26,99 +23,62 @@ navigator.mediaDevices.getUserMedia({
     })
   })
 
-  socket.on('user-connected', (userId) => {
-    connectToNewUser(userId, stream);
+  socket.on('user-connected', userId => {
+    connectToNewUser(userId, stream)
   })
-  let text = $('input')
-
-  $('html').keydown((e) => {
-    if(e.which == 13 && text.val().length !== 0) {
-      socket.emit('message', text.val()); // This will send using .emit()
+  // input value
+  let text = $("input");
+  // when press enter send message
+  $('html').keydown(function (e) {
+    if (e.which == 13 && text.val().length !== 0) {
+      socket.emit('message', text.val());
       text.val('')
     }
-  })
-  socket.on('createMessage', message => {
-    console.log(message);
-    $('.messages').append(`<li class="message"><b>user</b><br/>${message}</li>`)
+  });
+  socket.on("createMessage", message => {
+    $("ul").append(`<li class="message"><b>user</b><br/>${message}</li>`);
     scrollToBottom()
   })
 })
 
-peer.on('open', id => {
-  socket.emit('join-room', ROOM_ID, id);
+socket.on('user-disconnected', userId => {
+  if (peers[userId]) peers[userId].close()
 })
 
-const connectToNewUser = (userId, stream) => {
-  const call = peer.call(userId, stream)
+myPeer.on('open', id => {
+  socket.emit('join-room', ROOM_ID, id)
+})
+
+function connectToNewUser(userId, stream) {
+  const call = myPeer.call(userId, stream)
   const video = document.createElement('video')
   call.on('stream', userVideoStream => {
     addVideoStream(video, userVideoStream)
   })
+  call.on('close', () => {
+    video.remove()
+  })
+
+  peers[userId] = call
 }
 
-const addVideoStream = (video, stream) => {
-  video.srcObject = stream;
+function addVideoStream(video, stream) {
+  video.srcObject = stream
   video.addEventListener('loadedmetadata', () => {
-    video.play();
+    video.play()
   })
-  videoGrid.append(video);
+  videoGrid.append(video)
 }
+
+
+
 const scrollToBottom = () => {
-  let d = $('.main__chat__window');
+  var d = $('.main__chat_window');
   d.scrollTop(d.prop("scrollHeight"));
 }
 
-const setMuteButton = () => {
-  const html = `
-  <i class="fas fa-microphone"></i>
-  <span>Mute</span>
-  `
 
-  document.querySelector('.main__mute_button').innerHTML = html;
-}
-
-const setUnmuteButton = () => {
-  const html = `
-  <i class="unmute fas fa-microphone-slash"></i>
-  <span>Unmute</span>
-  `
-
-  document.querySelector('.main__mute_button').innerHTML = html;
-}
-
- const playStop = () => {
-   let enabled = myVideoStream.getVideoTracks()[0].enabled;
-   if (enabled) {
-     myVideoStream.getVideoTracks()[0].enabled = false;
-     setPlayVideo();
-
-   } else {
-     setStopVideo()
-     myVideoStream.getVideoTracks()[0].enabled = true;
-   }
- }
-
- const setStopVideo = () => {
-   const html = `
-   <i class="fas fa-video"></i>
-   <span>Stop Video</span>
-   `
-
-   document.querySelector('.main__video_button').innerHTML = html;
- }
-
- const setPlayVideo = () => {
-   const html = `
-   <i class="stop fas fa-video-slash"></i>
-   <span>Play Video</span>`
-
-   document.querySelector('.main__video_button').innerHTML = html;
- }
-
-
-// This will mute and unmute when click
 const muteUnmute = () => {
-  console.log(myVideoStream)
   const enabled = myVideoStream.getAudioTracks()[0].enabled;
   if (enabled) {
     myVideoStream.getAudioTracks()[0].enabled = false;
@@ -129,5 +89,48 @@ const muteUnmute = () => {
   }
 }
 
+const playStop = () => {
+  console.log('object')
+  let enabled = myVideoStream.getVideoTracks()[0].enabled;
+  if (enabled) {
+    myVideoStream.getVideoTracks()[0].enabled = false;
+    setPlayVideo()
+  } else {
+    setStopVideo()
+    myVideoStream.getVideoTracks()[0].enabled = true;
+  }
+}
+
+const setMuteButton = () => {
+  const html = `
+    <i class="fas fa-microphone"></i>
+    <span>Mute</span>
+  `
+  document.querySelector('.main__mute_button').innerHTML = html;
+}
+
+const setUnmuteButton = () => {
+  const html = `
+    <i class="unmute fas fa-microphone-slash"></i>
+    <span>Unmute</span>
+  `
+  document.querySelector('.main__mute_button').innerHTML = html;
+}
+
+const setStopVideo = () => {
+  const html = `
+    <i class="fas fa-video"></i>
+    <span>Stop Video</span>
+  `
+  document.querySelector('.main__video_button').innerHTML = html;
+}
+
+const setPlayVideo = () => {
+  const html = `
+  <i class="stop fas fa-video-slash"></i>
+    <span>Play Video</span>
+  `
+  document.querySelector('.main__video_button').innerHTML = html;
+}
 
 // WebRTC, an open source project that provides web browsers and mobile applocations with real-time communication via simple application programming interfaces
